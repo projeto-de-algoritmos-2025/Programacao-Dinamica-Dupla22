@@ -104,13 +104,12 @@ A aplicação roda por padrão em `http://127.0.0.1:5000/` com `debug=True` (mod
 	 - Job C: 10–20, valor 200
 	O algoritmo deve escolher A ou B+C dependendo dos valores — verifique o `Lucro Máximo`.
 
-## Próximos passos sugeridos
+## Apresentação 
 
-- Adicionar testes unitários (pytest) para `logic.py`.
-- Melhorar mensagem de erro no frontend e backend.
-- Adicionar Dockerfile para execução consistente em produção.
+<div align="center">
+<a href="https://youtu.be/pX8PYBPTqgk"><img src="https://i0.wp.com/noic.com.br/wp-content/uploads/2015/04/fib.png?resize=688%2C409" width="50%"></a>
+</div>
 
----
+[![Assista no YouTube](https://img.shields.io/badge/YouTube-Video-red?logo=youtube)](https://youtu.be/pX8PYBPTqgk)
 
-Se quiser, eu posso: executar os testes (se existirem), adicionar um `Makefile`/scripts de execução,
-ou gerar um `Dockerfile` para rodar a aplicação em container. Qualquer preferência?
+<font size="3"><p style="text-align: center">Autor: [Diogo Barboza](https://github.com/) e [Daniel Ferreira](https://github.com/).</p></font>
