@@ -61,6 +61,11 @@ python app.py
 
 A aplicação roda por padrão em `http://127.0.0.1:5000/` com `debug=True` (modo de desenvolvimento).
 
+## Screenshots
+
+![](fotos/image.png)
+![](fotos/show.png)
+
 ## Uso — Interface web
 
 1. Abra `http://127.0.0.1:5000/` no navegador.
