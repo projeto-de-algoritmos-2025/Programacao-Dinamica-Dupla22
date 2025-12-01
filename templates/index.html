@@ -2,12 +2,12 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Agenda</title>
+    <title>Smart Agenda - Algoritmos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .timeline-container {
             position: relative;
-            height: 300px;
+            height: 350px;
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             margin-top: 20px;
@@ -22,6 +22,7 @@
             font-size: 10px;
             color: #666;
             padding-left: 2px;
+            pointer-events: none;
         }
         .job-bar {
             position: absolute;
@@ -31,60 +32,83 @@
             font-size: 12px;
             display: flex;
             align-items: center;
-            /* justify_content: center; */
+            padding-left: 5px;
             opacity: 0.9;
             transition: all 0.3s;
             cursor: pointer;
+            z-index: 5;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .job-bar:hover { opacity: 1; transform: scale(1.02); z-index: 10;}
-        .bg-selected { background-color: #198754; border: 1px solid #146c43; } /* Verde */
-        .bg-rejected { background-color: #6c757d; border: 1px solid #495057; } /* Cinza */
+        .job-bar:hover { opacity: 1; transform: scale(1.02); z-index: 100; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .bg-selected { background-color: #198754; border: 1px solid #146c43; } /* Verde - Aceito */
+        .bg-rejected { background-color: #adb5bd; border: 1px solid #6c757d; opacity: 0.6; } /* Cinza - Rejeitado */
     </style>
 </head>
 <body class="bg-light">
 
 <div class="container py-5">
-    <h1 class="text-center mb-4">Otimizador de Freelance</h1>
+    <h1 class="text-center mb-4">Otimizador de Agenda & Recursos</h1>
     
-    <div class="card p-4 shadow-sm mb-4">
+    <div class="card p-4 shadow-sm mb-4 border-0">
         <div class="row g-2 align-items-end">
             <div class="col-md-3">
-                <label>Nome do Trabalho</label>
+                <label class="form-label small fw-bold">Nome do Trabalho</label>
                 <input type="text" id="nome" class="form-control" placeholder="Ex: Consultoria">
             </div>
             <div class="col-md-2">
-                <label>Início (0-23h)</label>
+                <label class="form-label small fw-bold">Início (0-23h)</label>
                 <input type="number" id="inicio" class="form-control" min="0" max="23">
             </div>
             <div class="col-md-2">
-                <label>Fim (1-24h)</label>
+                <label class="form-label small fw-bold">Fim (1-24h)</label>
                 <input type="number" id="fim" class="form-control" min="1" max="24">
             </div>
             <div class="col-md-2">
-                <label>Valor (R$)</label>
+                <label class="form-label small fw-bold">Valor (R$)</label>
                 <input type="number" id="valor" class="form-control">
             </div>
             <div class="col-md-3">
-                <button onclick="addJob()" class="btn btn-primary w-100">Adicionar à Lista</button>
+                <button onclick="addJob()" class="btn btn-primary w-100 fw-bold">Adicionar à Lista</button>
             </div>
         </div>
     </div>
 
     <div class="row">
         <div class="col-md-4">
-            <h4>Lista de Jobs</h4>
-            <ul id="lista-jobs" class="list-group mb-3" style="max-height: 300px; overflow: auto;">
-                </ul>
-            <button onclick="otimizar()" class="btn btn-success w-100 fw-bold">CALCULAR MELHOR AGENDA</button>
-            <div class="alert alert-success mt-3 d-none" id="resultado-box">
-                Lucro Máximo: <strong>R$ <span id="lucro-total">0</span></strong>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4>Lista de Demandas</h4>
+                <button onclick="limparLista()" class="btn btn-link btn-sm text-decoration-none text-danger">Limpar</button>
+            </div>
+            
+            <ul id="lista-jobs" class="list-group mb-3 shadow-sm" style="max-height: 300px; overflow-y: auto;">
+                <li class="list-group-item text-center text-muted py-4">Nenhum job adicionado</li>
+            </ul>
+            
+            <button onclick="otimizar()" class="btn btn-dark w-100 py-2 fw-bold shadow">CALCULAR MELHOR CENÁRIO</button>
+            
+            <div class="alert alert-success mt-3 d-none shadow-sm" id="resultado-box">
+                <h5 class="alert-heading">💰 Cenário Individual</h5>
+                <p class="mb-0 small">Lucro Máximo possível trabalhando sozinho:</p>
+                <div class="fs-2 fw-bold text-success">R$ <span id="lucro-total">0</span></div>
+            </div>
+
+            <div class="alert alert-info mt-2 d-none shadow-sm" id="equipe-box">
+                <h5 class="alert-heading">👥 Análise de Equipe</h5>
+                <p class="mb-0 small">Para aceitar <strong>TODOS</strong> os trabalhos listados (100% da demanda), você precisaria de:</p>
+                <div class="fs-4 fw-bold text-primary"><span id="equipe-qtd">0</span> Pessoas</div>
             </div>
         </div>
         
         <div class="col-md-8">
-            <h4>Visualização do Dia (0h - 24h)</h4>
-            <div class="timeline-container" id="timeline">
+            <h4>Linha do Tempo (0h - 24h)</h4>
+            <div class="timeline-container shadow-sm" id="timeline">
                 </div>
+            <div class="mt-2 d-flex gap-3 small text-muted">
+                <div class="d-flex align-items-center"><div style="width:15px; height:15px; background:#198754; margin-right:5px; border-radius:3px;"></div> Selecionado (Max Lucro)</div>
+                <div class="d-flex align-items-center"><div style="width:15px; height:15px; background:#adb5bd; margin-right:5px; border-radius:3px;"></div> Conflito de Horário</div>
+            </div>
         </div>
     </div>
 </div>
@@ -92,12 +116,13 @@
 <script>
     let jobs = [];
 
+    // Desenhar marcadores da timeline
     const timeline = document.getElementById('timeline');
     for(let i=0; i<=24; i+=2) {
         let mark = document.createElement('div');
         mark.className = 'time-marker';
         mark.style.left = (i/24 * 100) + '%';
-        mark.innerText = i + 'h';
+        mark.innerHTML = `<span style="position:absolute; bottom:5px; left:2px;">${i}h</span>`;
         timeline.appendChild(mark);
     }
 
@@ -108,30 +133,56 @@
         const valor = parseFloat(document.getElementById('valor').value);
 
         if(!nome || isNaN(inicio) || isNaN(fim) || isNaN(valor) || inicio >= fim) {
-            alert("Preencha corretamente. Início deve ser menor que Fim.");
+            alert("Erro: Verifique os horários (Início < Fim) e preencha tudo.");
             return;
         }
 
         const job = { id: Date.now(), nome, inicio, fim, valor };
         jobs.push(job);
         renderList();
-        renderTimeline([]);
+        renderTimeline([]); // Renderiza cinza por enquanto
         
+        // Limpar inputs
         document.getElementById('nome').value = '';
+        document.getElementById('inicio').value = '';
+        document.getElementById('fim').value = '';
+        document.getElementById('valor').value = '';
+        
+        // Esconder resultados antigos se houver alteração
+        document.getElementById('resultado-box').classList.add('d-none');
+        document.getElementById('equipe-box').classList.add('d-none');
+    }
+
+    function limparLista() {
+        jobs = [];
+        renderList();
+        renderTimeline([]);
+        document.getElementById('resultado-box').classList.add('d-none');
+        document.getElementById('equipe-box').classList.add('d-none');
     }
 
     function renderList() {
         const ul = document.getElementById('lista-jobs');
         ul.innerHTML = '';
-        jobs.forEach(j => {
+        if(jobs.length === 0) {
+            ul.innerHTML = '<li class="list-group-item text-center text-muted py-4">Nenhum job adicionado</li>';
+            return;
+        }
+        
+        // Ordena na lista visualmente por horário
+        const sorted = [...jobs].sort((a,b) => a.inicio - b.inicio);
+        
+        sorted.forEach(j => {
             ul.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                ${j.nome} (${j.inicio}h-${j.fim}h)
+                <span>${j.nome} <small class="text-muted">(${j.inicio}h-${j.fim}h)</small></span>
                 <span class="badge bg-secondary rounded-pill">R$ ${j.valor}</span>
             </li>`;
         });
     }
 
     async function otimizar() {
+        if(jobs.length === 0) { alert("Adicione trabalhos primeiro!"); return; }
+
         const response = await fetch('/calcular', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -140,9 +191,15 @@
         
         const data = await response.json();
         
+        // 1. Mostrar Lucro (Verde)
         document.getElementById('resultado-box').classList.remove('d-none');
         document.getElementById('lucro-total').innerText = data.lucro_total.toFixed(2);
 
+        // 2. Mostrar Equipe (Azul) - NOVA PARTE
+        document.getElementById('equipe-box').classList.remove('d-none');
+        document.getElementById('equipe-qtd').innerText = data.analise_equipe.tamanho_equipe;
+
+        // 3. Atualizar Timeline
         const escolhidosIds = new Set(data.jobs_escolhidos.map(j => j.id));
         renderTimeline(escolhidosIds);
     }
@@ -151,6 +208,7 @@
         const bars = document.querySelectorAll('.job-bar');
         bars.forEach(b => b.remove());
 
+        // Ordena por início para efeito "escada"
         const sortedJobs = [...jobs].sort((a,b) => a.inicio - b.inicio);
 
         sortedJobs.forEach((job, index) => {
@@ -167,8 +225,9 @@
             el.className = `job-bar ${isSelected ? 'bg-selected' : 'bg-rejected'}`;
             el.style.left = left + '%';
             el.style.width = width + '%';
-            el.style.top = (30 + (index * 40)) + 'px'; 
-            el.innerHTML = `${job.nome} <small class="ms-1">(R$${job.valor})</small>`;
+            el.style.top = (20 + (index * 35)) + 'px'; // Espaçamento vertical
+            
+            el.innerHTML = `<span class="fw-bold me-1">${job.inicio}h</span> ${job.nome}`;
             
             timeline.appendChild(el);
         });
