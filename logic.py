@@ -1,9 +1,11 @@
 import bisect
+import heapq
 
 def otimizar_agenda(jobs_data):
     """
-    Recebe uma lista de dicionários: [{'nome': 'A', 'inicio': 0, 'fim': 10, 'valor': 100}, ...]
-    Retorna o lucro máximo e a lista de jobs escolhidos.
+    PROBLEMA 1: Weighted Interval Scheduling
+    Objetivo: Maximizar lucro com apenas 1 recurso (você).
+    Estratégia: Programação Dinâmica (O(n log n)).
     """
     # 1. Ordenar por horário de término
     jobs = sorted(jobs_data, key=lambda x: x['fim'])
@@ -19,8 +21,7 @@ def otimizar_agenda(jobs_data):
         profit_incl = current_job['valor']
         selection_incl = [current_job]
 
-        # Busca Binária para achar o job compatível anterior
-        # bisect_right retorna o ponto de inserção para manter a ordem
+        # Busca Binária: Encontra o job compatível anterior
         idx = bisect.bisect_right(end_times, current_job['inicio'], 0, i) - 1
         
         if idx >= 0:
@@ -33,7 +34,7 @@ def otimizar_agenda(jobs_data):
         if i > 0:
             profit_excl, selection_excl = dp[i-1]
 
-        # Decisão
+        # Decisão: Incluir atual ou manter o anterior
         if profit_incl > profit_excl:
             dp[i] = (profit_incl, selection_incl)
         else:
@@ -42,4 +43,33 @@ def otimizar_agenda(jobs_data):
     return {
         "lucro_total": dp[-1][0] if n > 0 else 0,
         "jobs_escolhidos": dp[-1][1] if n > 0 else []
+    }
+
+def calcular_equipe_minima(jobs_data):
+    """
+    PROBLEMA 2: Interval Partitioning
+    Objetivo: Descobrir o nº mínimo de pessoas para aceitar TODOS os jobs.
+    Estratégia: Algoritmo Guloso + Min-Heap (O(n log n)).
+    """
+    if not jobs_data:
+        return {"tamanho_equipe": 0}
+
+    # 1. Ordenar por horário de inicio
+    jobs = sorted(jobs_data, key=lambda x: x['inicio'])
+    
+    # Heap armazena o horário de término de cada pessoa da equipe
+    heap = [] 
+    
+    for job in jobs:
+        # Se houver alguém livre antes desse job começar
+        if heap and heap[0] <= job['inicio']:
+            heapq.heappop(heap) # Remove o horário antigo dessa pessoa
+            heapq.heappush(heap, job['fim']) # Atualiza com o novo horário de término
+        else:
+            # Ninguém livre, precisamos de uma nova pessoa na equipe
+            heapq.heappush(heap, job['fim'])
+
+    # O tamanho do heap no final é o número de pessoas necessárias
+    return {
+        "tamanho_equipe": len(heap)
     }
