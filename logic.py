@@ -11,7 +11,7 @@ def otimizar_agenda(jobs_data):
     n = len(jobs)
     end_times = [j['fim'] for j in jobs]
     
-    # DP: armazena tupla (lucro_acumulado, lista_de_jobs)
+    # (lucro_acumulado, lista_de_jobs)
     dp = [(0, [])] * n
 
     for i in range(n):

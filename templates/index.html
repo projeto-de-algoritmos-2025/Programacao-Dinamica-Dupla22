@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Agenda</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .timeline-container {
+            position: relative;
+            height: 300px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            margin-top: 20px;
+            border-radius: 5px;
+            overflow-y: auto;
+        }
+        .time-marker {
+            position: absolute;
+            bottom: 0;
+            height: 100%;
+            border-left: 1px dashed #ccc;
+            font-size: 10px;
+            color: #666;
+            padding-left: 2px;
+        }
+        .job-bar {
+            position: absolute;
+            height: 30px;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            /* justify_content: center; */
+            opacity: 0.9;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .job-bar:hover { opacity: 1; transform: scale(1.02); z-index: 10;}
+        .bg-selected { background-color: #198754; border: 1px solid #146c43; } /* Verde */
+        .bg-rejected { background-color: #6c757d; border: 1px solid #495057; } /* Cinza */
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <h1 class="text-center mb-4">Otimizador de Freelance</h1>
+    
+    <div class="card p-4 shadow-sm mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label>Nome do Trabalho</label>
+                <input type="text" id="nome" class="form-control" placeholder="Ex: Consultoria">
+            </div>
+            <div class="col-md-2">
+                <label>Início (0-23h)</label>
+                <input type="number" id="inicio" class="form-control" min="0" max="23">
+            </div>
+            <div class="col-md-2">
+                <label>Fim (1-24h)</label>
+                <input type="number" id="fim" class="form-control" min="1" max="24">
+            </div>
+            <div class="col-md-2">
+                <label>Valor (R$)</label>
+                <input type="number" id="valor" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <button onclick="addJob()" class="btn btn-primary w-100">Adicionar à Lista</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <h4>Lista de Jobs</h4>
+            <ul id="lista-jobs" class="list-group mb-3" style="max-height: 300px; overflow: auto;">
+                </ul>
+            <button onclick="otimizar()" class="btn btn-success w-100 fw-bold">CALCULAR MELHOR AGENDA</button>
+            <div class="alert alert-success mt-3 d-none" id="resultado-box">
+                Lucro Máximo: <strong>R$ <span id="lucro-total">0</span></strong>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <h4>Visualização do Dia (0h - 24h)</h4>
+            <div class="timeline-container" id="timeline">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let jobs = [];
+
+    const timeline = document.getElementById('timeline');
+    for(let i=0; i<=24; i+=2) {
+        let mark = document.createElement('div');
+        mark.className = 'time-marker';
+        mark.style.left = (i/24 * 100) + '%';
+        mark.innerText = i + 'h';
+        timeline.appendChild(mark);
+    }
+
+    function addJob() {
+        const nome = document.getElementById('nome').value;
+        const inicio = parseInt(document.getElementById('inicio').value);
+        const fim = parseInt(document.getElementById('fim').value);
+        const valor = parseFloat(document.getElementById('valor').value);
+
+        if(!nome || isNaN(inicio) || isNaN(fim) || isNaN(valor) || inicio >= fim) {
+            alert("Preencha corretamente. Início deve ser menor que Fim.");
+            return;
+        }
+
+        const job = { id: Date.now(), nome, inicio, fim, valor };
+        jobs.push(job);
+        renderList();
+        renderTimeline([]);
+        
+        document.getElementById('nome').value = '';
+    }
+
+    function renderList() {
+        const ul = document.getElementById('lista-jobs');
+        ul.innerHTML = '';
+        jobs.forEach(j => {
+            ul.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                ${j.nome} (${j.inicio}h-${j.fim}h)
+                <span class="badge bg-secondary rounded-pill">R$ ${j.valor}</span>
+            </li>`;
+        });
+    }
+
+    async function otimizar() {
+        const response = await fetch('/calcular', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ jobs })
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('resultado-box').classList.remove('d-none');
+        document.getElementById('lucro-total').innerText = data.lucro_total.toFixed(2);
+
+        const escolhidosIds = new Set(data.jobs_escolhidos.map(j => j.id));
+        renderTimeline(escolhidosIds);
+    }
+
+    function renderTimeline(escolhidosIds) {
+        const bars = document.querySelectorAll('.job-bar');
+        bars.forEach(b => b.remove());
+
+        const sortedJobs = [...jobs].sort((a,b) => a.inicio - b.inicio);
+
+        sortedJobs.forEach((job, index) => {
+            const el = document.createElement('div');
+            
+            const left = (job.inicio / 24) * 100;
+            const width = ((job.fim - job.inicio) / 24) * 100;
+            
+            let isSelected = false;
+            if (escolhidosIds instanceof Set) {
+                 isSelected = escolhidosIds.has(job.id);
+            }
+
+            el.className = `job-bar ${isSelected ? 'bg-selected' : 'bg-rejected'}`;
+            el.style.left = left + '%';
+            el.style.width = width + '%';
+            el.style.top = (30 + (index * 40)) + 'px'; 
+            el.innerHTML = `${job.nome} <small class="ms-1">(R$${job.valor})</small>`;
+            
+            timeline.appendChild(el);
+        });
+    }
+</script>
+</body>
+</html>
